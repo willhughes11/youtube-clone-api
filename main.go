@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,13 +18,15 @@ type apiBase struct {
 }
 
 var (
-	videoParts = strings.Split("contentDetails,id,snippet,statistics,topicDetails", ",")
+	popularVideoParts          = strings.Split("contentDetails,id,snippet,statistics,topicDetails", ",")
+	channelProfilePictureParts = strings.Split("snippet", ",")
 )
 
 func main() {
 	router := gin.Default()
 	router.GET("/", getApiBaseEndpoint)
 	router.GET("/videos/popular", getPopularYoutubeVideos)
+	router.GET("/channel/:id/thumbnails", getChannelProfilePicture)
 
 	router.Run("localhost:8080")
 }
@@ -40,8 +41,9 @@ func getApiBaseEndpoint(c *gin.Context) {
 
 func getPopularYoutubeVideos(c *gin.Context) {
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-		c.AbortWithStatus(http.StatusInternalServerError)
+		log.Printf("Error loading .env file: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
 	}
 
 	apiKey := os.Getenv("YOUTUBE_API_KEY")
@@ -50,18 +52,62 @@ func getPopularYoutubeVideos(c *gin.Context) {
 	ctx := context.Background()
 	service, err := youtube.NewService(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
-		log.Fatalf("Error creating YouTube service client: %v", err)
+		log.Printf("Error creating YouTube service client: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
 	}
 
 	// Make an API request to fetch YouTube video data
-	call := service.Videos.List(videoParts)
+	call := service.Videos.List(popularVideoParts)
 	call = call.Chart("mostPopular")
 	response, err := call.Do()
 	if err != nil {
-		log.Fatalf("Error making API call: %v", err)
+		log.Printf("Error making API call: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
 	}
 
-	// Print the API response
-	fmt.Printf("%+v\n", response)
+	// Return the API response with a 200 status code
 	c.IndentedJSON(http.StatusOK, response)
+}
+
+func getChannelProfilePicture(c *gin.Context) {
+	channelId := c.Param("id")
+
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Error loading .env file: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	apiKey := os.Getenv("YOUTUBE_API_KEY")
+
+	// Create a new YouTube service client
+	ctx := context.Background()
+	service, err := youtube.NewService(ctx, option.WithAPIKey(apiKey))
+	if err != nil {
+		log.Printf("Error creating YouTube service client: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	// Make an API request to fetch YouTube video data
+	call := service.Channels.List(channelProfilePictureParts)
+	call = call.Id(channelId)
+	response, err := call.Do()
+	if err != nil {
+		log.Printf("Error making API call: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	channelThumbnails := map[string]interface{}{
+		"etag":       response.Etag,
+		"kind":       response.Kind,
+		"id":         response.Items[0].Id,
+		"thumbnails": response.Items[0].Snippet.Thumbnails,
+	}
+
+	// Return the API response with a 200 status code
+	c.IndentedJSON(http.StatusOK, channelThumbnails)
 }
