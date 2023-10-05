@@ -1,16 +1,12 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-	"google.golang.org/api/option"
-	"google.golang.org/api/youtube/v3"
 )
 
 type apiBase struct {
@@ -24,6 +20,11 @@ var (
 
 func main() {
 	router := gin.Default()
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"*"} // Adjust this to your domain(s)
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
+	router.Use(cors.New(config))
+
 	router.GET("/", getApiBaseEndpoint)
 	router.GET("/videos/popular", getPopularYoutubeVideos)
 	router.GET("/channel/:id/thumbnails", getChannelProfilePicture)
@@ -40,21 +41,9 @@ func getApiBaseEndpoint(c *gin.Context) {
 }
 
 func getPopularYoutubeVideos(c *gin.Context) {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Error loading .env file: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
-	}
-
-	apiKey := os.Getenv("YOUTUBE_API_KEY")
-
-	// Create a new YouTube service client
-	ctx := context.Background()
-	service, err := youtube.NewService(ctx, option.WithAPIKey(apiKey))
+	service, err := getGoogleApiService()
 	if err != nil {
-		log.Printf("Error creating YouTube service client: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
 	}
 
 	// Make an API request to fetch YouTube video data
@@ -74,21 +63,9 @@ func getPopularYoutubeVideos(c *gin.Context) {
 func getChannelProfilePicture(c *gin.Context) {
 	channelId := c.Param("id")
 
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Error loading .env file: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
-	}
-
-	apiKey := os.Getenv("YOUTUBE_API_KEY")
-
-	// Create a new YouTube service client
-	ctx := context.Background()
-	service, err := youtube.NewService(ctx, option.WithAPIKey(apiKey))
+	service, err := getGoogleApiService()
 	if err != nil {
-		log.Printf("Error creating YouTube service client: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
 	}
 
 	// Make an API request to fetch YouTube video data
