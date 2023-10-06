@@ -9,16 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type apiBase struct {
-	Info string `json:"info"`
-}
-
-var (
-	popularVideoParts          = strings.Split("contentDetails,id,snippet,statistics,topicDetails", ",")
-	channelProfilePictureParts = strings.Split("snippet", ",")
-)
-
 func main() {
+	gin.ForceConsoleColor()
 	router := gin.Default()
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"} // Adjust this to your domain(s)
@@ -28,11 +20,16 @@ func main() {
 	router.GET("/", getApiBaseEndpoint)
 	router.GET("/videos/popular", getPopularYoutubeVideos)
 	router.GET("/channel/:id/thumbnails", getChannelProfilePicture)
+	router.GET("/videoCategories", getPopularVideoCategoriesByRegionCode)
 
 	router.Run("localhost:8080")
 }
 
 func getApiBaseEndpoint(c *gin.Context) {
+	type apiBase struct {
+		Info string `json:"info"`
+	}
+
 	var apiBaseInfo = apiBase{
 		Info: "LiveSync API",
 	}
@@ -41,12 +38,12 @@ func getApiBaseEndpoint(c *gin.Context) {
 }
 
 func getPopularYoutubeVideos(c *gin.Context) {
+	popularVideoParts := strings.Split("contentDetails,id,snippet,statistics,topicDetails", ",")
 	service, err := getGoogleApiService()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 	}
 
-	// Make an API request to fetch YouTube video data
 	call := service.Videos.List(popularVideoParts)
 	call = call.Chart("mostPopular")
 	response, err := call.Do()
@@ -56,11 +53,11 @@ func getPopularYoutubeVideos(c *gin.Context) {
 		return
 	}
 
-	// Return the API response with a 200 status code
 	c.IndentedJSON(http.StatusOK, response)
 }
 
 func getChannelProfilePicture(c *gin.Context) {
+	channelProfilePictureParts := strings.Split("snippet", ",")
 	channelId := c.Param("id")
 
 	service, err := getGoogleApiService()
@@ -68,7 +65,6 @@ func getChannelProfilePicture(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 	}
 
-	// Make an API request to fetch YouTube video data
 	call := service.Channels.List(channelProfilePictureParts)
 	call = call.Id(channelId)
 	response, err := call.Do()
@@ -85,6 +81,26 @@ func getChannelProfilePicture(c *gin.Context) {
 		"thumbnails": response.Items[0].Snippet.Thumbnails,
 	}
 
-	// Return the API response with a 200 status code
 	c.IndentedJSON(http.StatusOK, channelThumbnails)
+}
+
+func getPopularVideoCategoriesByRegionCode(c *gin.Context) {
+	videoCategoriesByRegionParts := strings.Split("snippet", ",")
+	regionCode := c.DefaultQuery("rc", "US")
+
+	service, err := getGoogleApiService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+	}
+
+	call := service.VideoCategories.List(videoCategoriesByRegionParts)
+	call = call.RegionCode(regionCode)
+	response, err := call.Do()
+	if err != nil {
+		log.Printf("Error making API call: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
 }
