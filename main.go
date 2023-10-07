@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/api/youtube/v3"
 )
 
 func main() {
@@ -17,10 +18,10 @@ func main() {
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
 	router.Use(cors.New(config))
 
-	router.GET("/", getApiBaseEndpoint)
-	router.GET("/videos/popular", getPopularYoutubeVideos)
-	router.GET("/channel/:id/thumbnails", getChannelProfilePicture)
-	router.GET("/videoCategories", getPopularVideoCategoriesByRegionCode)
+	router.GET("/api/v1", getApiBaseEndpoint)
+	router.GET("/api/v1/videos/most-popular", getPopularYoutubeVideos)
+	router.GET("/api/v1/channel/:id/thumbnails", getChannelProfileThumbnails)
+	router.GET("/api/v1/videos/categories", getPopularVideoCategoriesByRegionCode)
 
 	router.Run("localhost:8080")
 }
@@ -38,6 +39,7 @@ func getApiBaseEndpoint(c *gin.Context) {
 }
 
 func getPopularYoutubeVideos(c *gin.Context) {
+	videoCategoryId := c.DefaultQuery("vcid", "0")
 	popularVideoParts := strings.Split("contentDetails,id,snippet,statistics,topicDetails", ",")
 	service, err := getGoogleApiService()
 	if err != nil {
@@ -45,7 +47,9 @@ func getPopularYoutubeVideos(c *gin.Context) {
 	}
 
 	call := service.Videos.List(popularVideoParts)
-	call = call.Chart("mostPopular")
+	call = call.Chart("mostPopular").
+		VideoCategoryId(videoCategoryId)
+
 	response, err := call.Do()
 	if err != nil {
 		log.Printf("Error making API call: %v", err)
@@ -56,7 +60,7 @@ func getPopularYoutubeVideos(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, response)
 }
 
-func getChannelProfilePicture(c *gin.Context) {
+func getChannelProfileThumbnails(c *gin.Context) {
 	channelProfilePictureParts := strings.Split("snippet", ",")
 	channelId := c.Param("id")
 
@@ -101,6 +105,19 @@ func getPopularVideoCategoriesByRegionCode(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
+
+	defaultVideoCategoryItem := &youtube.VideoCategory{
+		Etag: "default",
+		Kind: response.Items[0].Kind,
+		Id:   "0",
+		Snippet: &youtube.VideoCategorySnippet{
+			Assignable: true,
+			ChannelId:  response.Items[0].Snippet.ChannelId,
+			Title:      "All",
+		},
+	}
+
+	response.Items = append([]*youtube.VideoCategory{defaultVideoCategoryItem}, response.Items...)
 
 	c.IndentedJSON(http.StatusOK, response)
 }
