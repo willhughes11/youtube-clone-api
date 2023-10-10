@@ -43,38 +43,7 @@ func getPopularYoutubeVideos(c *gin.Context) {
 		return
 	}
 
-	// Unmarshal the JSON into a Go data structure (e.g., a map)
-	var data map[string]interface{}
-	if err := json.Unmarshal(jsonResponse, &data); err != nil {
-		log.Printf("Error unmarshaling JSON: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
-	}
-
-	// Loop through the data and make changes as needed
-	// For example, you can add a new key-value pair to each item's "snippet"
-	if items, ok := data["items"].([]interface{}); ok {
-		for _, item := range items {
-			if itemMap, itemIsMap := item.(map[string]interface{}); itemIsMap {
-				// Ensure "snippet" field exists and is a map
-				snippet, snippetExists := itemMap["snippet"].(map[string]interface{})
-				if !snippetExists {
-					snippet = make(map[string]interface{})
-					itemMap["snippet"] = snippet
-				}
-
-				channelId := snippet["channelId"]
-
-				if channelIdStr, ok := channelId.(string); ok {
-					channelThumbnails := getChannelThumbnails(service, channelIdStr)
-
-					// Modify or add a new key-value pair to "snippet"
-					snippet["channelThumbnails"] = channelThumbnails
-				}
-
-			}
-		}
-	}
+	data := processItemsConcurrently(jsonResponse, service)
 
 	// Marshal the modified data back into JSON
 	modifiedResponse, err := json.Marshal(data)
