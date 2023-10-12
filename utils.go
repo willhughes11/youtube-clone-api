@@ -24,7 +24,7 @@ func getChannelThumbnails(service *youtube.Service, channelId string) *youtube.T
 	return channelResponse.Items[0].Snippet.Thumbnails
 }
 
-func processItemsConcurrently(jsonResponse []byte, service *youtube.Service) []map[string]interface{} {
+func processItemsConcurrently(jsonResponse []byte, service *youtube.Service) map[string]interface{} {
 	// Unmarshal the JSON into a Go data structure (e.g., a map)
 	var data map[string]interface{}
 	if err := json.Unmarshal(jsonResponse, &data); err != nil {
@@ -62,10 +62,10 @@ func processItemsConcurrently(jsonResponse []byte, service *youtube.Service) []m
 	// Collect results from goroutines
 	for processedItem := range resultChannel {
 		// Append processed items to the slice
-		processedItems = append(processedItems, processedItem)
+		_ = append(processedItems, processedItem)
 	}
 
-	return processedItems
+	return data
 }
 
 func processItem(itemMap map[string]interface{}, service *youtube.Service) map[string]interface{} {
