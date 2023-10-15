@@ -17,12 +17,15 @@ func main() {
 
 	router.GET("/api/v1", getApiBaseEndpoint)
 
-	router.GET("/api/v1/videos/most-popular", getPopularYoutubeVideos)
-	router.GET("/api/v1/videos", getVideosByChannelId)
-	router.GET("/api/v1/videos/categories", getVideoCategoriesByRegionCode)
+	router.GET("/api/v1/videos/mostPopular", getPopularYoutubeVideos)
+	router.GET("/api/v1/videos/channel/:id", getVideosByChannelId)
 
-	router.GET("/api/v1/channels/:id", getChannelById)
-	router.GET("/api/v1/channel-sections/:id", getChannelSectionsById)
+	router.GET("/api/v1/videosCategories", getVideoCategoriesByRegionCode)
+
+	router.GET("/api/v1/channels", getChannel)
+
+	router.GET("/api/v1/channelSections/channel/:id", getChannelSectionsByChannelId)
+	router.GET("/api/v1/channelSections/:id", getChannelSectionsById)
 
 	router.Run()
 }
