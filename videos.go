@@ -94,3 +94,28 @@ func getVideoCategoriesByRegionCode(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, response)
 }
+
+func getVideosByChannelId(c *gin.Context) {
+	videoSearchParts := strings.Split("snippet", ",")
+	channelId := c.DefaultQuery("cid", "")
+	if len(channelId) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
+	service, err := getGoogleApiService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+	}
+
+	call := service.Search.List(videoSearchParts)
+	call = call.ChannelId(channelId)
+	response, err := call.Do()
+	if err != nil {
+		log.Printf("Error making API call: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+}

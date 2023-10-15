@@ -16,10 +16,13 @@ func main() {
 	router.Use(cors.New(config))
 
 	router.GET("/api/v1", getApiBaseEndpoint)
+
 	router.GET("/api/v1/videos/most-popular", getPopularYoutubeVideos)
+	router.GET("/api/v1/videos", getVideosByChannelId)
+	router.GET("/api/v1/videos/categories", getVideoCategoriesByRegionCode)
+
 	router.GET("/api/v1/channels/:id", getChannelById)
 	router.GET("/api/v1/channel-sections/:id", getChannelSectionsById)
-	router.GET("/api/v1/videos/categories", getVideoCategoriesByRegionCode)
 
 	router.Run()
 }
@@ -30,7 +33,7 @@ func getApiBaseEndpoint(c *gin.Context) {
 	}
 
 	var apiBaseInfo = apiBase{
-		Info: "LiveSync API",
+		Info: "YouTube Clone API",
 	}
 
 	c.IndentedJSON(http.StatusOK, apiBaseInfo)
