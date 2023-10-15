@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getChannelProfileThumbnails(c *gin.Context) {
-	channelProfilePictureParts := strings.Split("snippet", ",")
+func getChannelById(c *gin.Context) {
+	channelParts := strings.Split("id,contentDetails,id,snippet,statistics,topicDetails,status,brandingSettings,localizations", ",")
 	channelId := c.Param("id")
 
 	service, err := getGoogleApiService()
@@ -17,7 +17,7 @@ func getChannelProfileThumbnails(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 	}
 
-	call := service.Channels.List(channelProfilePictureParts)
+	call := service.Channels.List(channelParts)
 	call = call.Id(channelId)
 	response, err := call.Do()
 	if err != nil {
@@ -26,12 +26,26 @@ func getChannelProfileThumbnails(c *gin.Context) {
 		return
 	}
 
-	channelThumbnails := map[string]interface{}{
-		"etag":       response.Etag,
-		"kind":       response.Kind,
-		"id":         response.Items[0].Id,
-		"thumbnails": response.Items[0].Snippet.Thumbnails,
+	c.IndentedJSON(http.StatusOK, response)
+}
+
+func getChannelSectionsById(c *gin.Context) {
+	channelSectionsPart := strings.Split("id,contentDetails,snippet", ",")
+	channelId := c.Param("id")
+
+	service, err := getGoogleApiService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 	}
 
-	c.IndentedJSON(http.StatusOK, channelThumbnails)
+	call := service.ChannelSections.List(channelSectionsPart)
+	call = call.ChannelId(channelId)
+	response, err := call.Do()
+	if err != nil {
+		log.Printf("Error making API call: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
 }

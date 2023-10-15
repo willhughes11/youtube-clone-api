@@ -14,6 +14,7 @@ func getPopularYoutubeVideos(c *gin.Context) {
 	videoCategoryId := c.DefaultQuery("vcid", "0")
 	regionCode := c.DefaultQuery("rc", "US")
 	nextPageToken := c.DefaultQuery("npt", "")
+	getChannelProfilePicture := c.DefaultQuery("gcpp", "true")
 	popularVideoParts := strings.Split("contentDetails,id,snippet,statistics,topicDetails", ",")
 
 	service, err := getGoogleApiService()
@@ -35,25 +36,29 @@ func getPopularYoutubeVideos(c *gin.Context) {
 		return
 	}
 
-	// Loop through the response and modify the Snippet object for each item
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		log.Printf("Error marshaling response: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
+	if getChannelProfilePicture == "true" {
+		// Loop through the response and modify the Snippet object for each item
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			log.Printf("Error marshaling response: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			return
+		}
+
+		data := processItemsConcurrently(jsonResponse, service)
+
+		// Marshal the modified data back into JSON
+		modifiedResponse, err := json.Marshal(data)
+		if err != nil {
+			log.Printf("Error marshaling modified data: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			return
+		}
+
+		c.Data(http.StatusOK, "application/json; charset=utf-8", modifiedResponse)
+	} else {
+		c.IndentedJSON(http.StatusOK, response)
 	}
-
-	data := processItemsConcurrently(jsonResponse, service)
-
-	// Marshal the modified data back into JSON
-	modifiedResponse, err := json.Marshal(data)
-	if err != nil {
-		log.Printf("Error marshaling modified data: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
-	}
-
-	c.Data(http.StatusOK, "application/json; charset=utf-8", modifiedResponse)
 }
 
 func getVideoCategoriesByRegionCode(c *gin.Context) {

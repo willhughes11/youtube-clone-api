@@ -17,7 +17,8 @@ func main() {
 
 	router.GET("/api/v1", getApiBaseEndpoint)
 	router.GET("/api/v1/videos/most-popular", getPopularYoutubeVideos)
-	router.GET("/api/v1/channel/:id/thumbnails", getChannelProfileThumbnails)
+	router.GET("/api/v1/channels/:id", getChannelById)
+	router.GET("/api/v1/channel-sections/:id", getChannelSectionsById)
 	router.GET("/api/v1/videos/categories", getVideoCategoriesByRegionCode)
 
 	router.Run()
