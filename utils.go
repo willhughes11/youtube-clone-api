@@ -25,7 +25,7 @@ func getChannelThumbnails(service *youtube.Service, channelId string) *youtube.T
 }
 
 func getVideo(service *youtube.Service, videoId string) *youtube.VideoListResponse {
-	videoParts := strings.Split("contentDetails,id,snippet,statistics,topicDetails", ",")
+	videoParts := strings.Split("id,snippet,statistics", ",")
 
 	call := service.Videos.List(videoParts)
 	call = call.Id(videoId)
@@ -61,7 +61,7 @@ func processItemsConcurrently(jsonResponse []byte, service *youtube.Service, rep
 					if replaceItemObj {
 						processedItem = replaceItem(itemMap, service)
 					} else {
-						processedItem = processItem(itemMap, service)
+						processedItem = processItemSnippet(itemMap, service)
 					}
 
 					data["items"].([]interface{})[i] = processedItem
@@ -77,6 +77,7 @@ func processItemsConcurrently(jsonResponse []byte, service *youtube.Service, rep
 		}()
 	}
 
+	// Collect processed items if needed, but they are already updated in the data map
 	for processedItem := range resultChannel {
 		_ = append(processedItems, processedItem)
 	}
@@ -84,7 +85,7 @@ func processItemsConcurrently(jsonResponse []byte, service *youtube.Service, rep
 	return data
 }
 
-func processItem(itemMap map[string]interface{}, service *youtube.Service) map[string]interface{} {
+func processItemSnippet(itemMap map[string]interface{}, service *youtube.Service) map[string]interface{} {
 	snippet, snippetExists := itemMap["snippet"].(map[string]interface{})
 	if !snippetExists {
 		snippet = make(map[string]interface{})
@@ -118,10 +119,8 @@ func replaceItem(itemMap map[string]interface{}, service *youtube.Service) map[s
 		item["kind"] = video.Kind
 		item["etag"] = video.Etag
 		item["id"] = video.Id
-		item["contentDetails"] = video.ContentDetails
 		item["snippet"] = video.Snippet
 		item["statistics"] = video.Statistics
-		item["topicDetails"] = video.TopicDetails
 
 		itemMap = item
 	}
