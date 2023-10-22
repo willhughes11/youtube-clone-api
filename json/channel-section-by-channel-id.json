@@ -1,0 +1,50 @@
+{
+    "etag": "bYQyBwCSstLToDV0C6rehpPkRjQ",
+    "items": [
+        {
+            "contentDetails": {
+                "playlists": [
+                    "PLoSWVnSA9vG9qV0CVCpg5WwEy3LiP7udY"
+                ]
+            },
+            "etag": "lw4_0DUq_lLg3R3VRGMdNIxmK4M",
+            "id": "UCX6OQ3DkcsbYNE6H8uQQuVA.jNQXAC9IVRw",
+            "kind": "youtube#channelSection",
+            "snippet": {
+                "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
+                "position": 0,
+                "type": "singleplaylist"
+            }
+        },
+        {
+            "etag": "tDxex8NzMD77dWINh5VJ8q6a7nU",
+            "id": "UCX6OQ3DkcsbYNE6H8uQQuVA.LeAltgu_pbM",
+            "kind": "youtube#channelSection",
+            "snippet": {
+                "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
+                "position": 1,
+                "type": "popularuploads"
+            }
+        },
+        {
+            "contentDetails": {
+                "channels": [
+                    "UCAiLfjNXkNv24uhpzUgPa6A",
+                    "UCIPPMRA040LQr5QPyJEbmXA",
+                    "UCUaT_39o1x6qWjz7K2pWcgw",
+                    "UC4-79UOlP48-QNGgCko5p2g"
+                ]
+            },
+            "etag": "7jgO1xrb_o2FKtyxAO-6sjxUdNI",
+            "id": "UCX6OQ3DkcsbYNE6H8uQQuVA.nGzAI5pLbMY",
+            "kind": "youtube#channelSection",
+            "snippet": {
+                "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
+                "position": 2,
+                "title": "Sub To All Channels For Cookie",
+                "type": "multiplechannels"
+            }
+        }
+    ],
+    "kind": "youtube#channelSectionListResponse"
+}

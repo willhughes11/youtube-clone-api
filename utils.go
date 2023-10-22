@@ -25,7 +25,7 @@ func getChannelThumbnails(service *youtube.Service, channelId string) *youtube.T
 }
 
 func getVideo(service *youtube.Service, videoId string) *youtube.VideoListResponse {
-	videoParts := strings.Split("id,snippet,statistics", ",")
+	videoParts := strings.Split("id,snippet,statistics,contentDetails", ",")
 
 	call := service.Videos.List(videoParts)
 	call = call.Id(videoId)
@@ -121,6 +121,7 @@ func replaceItem(itemMap map[string]interface{}, service *youtube.Service) map[s
 		item["id"] = video.Id
 		item["snippet"] = video.Snippet
 		item["statistics"] = video.Statistics
+		item["contentDetails"] = video.ContentDetails
 
 		itemMap = item
 	}

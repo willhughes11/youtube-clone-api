@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -86,41 +88,61 @@ func getVideosByChannelId(c *gin.Context) {
 	channelId := c.Param("id")
 	order := c.DefaultQuery("order", "date")
 	getVideoItemObject := c.DefaultQuery("gvio", "true")
+	getFakeData := c.DefaultQuery("gfd", "false")
 
-	service, err := getGoogleApiService()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-	}
-
-	call := service.Search.List(videoSearchParts)
-	call = call.ChannelId(channelId).Type("video").Order(order)
-	response, err := call.Do()
-	if err != nil {
-		log.Printf("Error making API call: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-		return
-	}
-
-	if getVideoItemObject == "true" {
-		jsonResponse, err := json.Marshal(response)
+	if getFakeData == "false" {
+		service, err := getGoogleApiService()
 		if err != nil {
-			log.Printf("Error marshaling response: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		}
+
+		call := service.Search.List(videoSearchParts)
+		call = call.ChannelId(channelId).Type("video").Order(order).VideoLicense("youtube")
+		response, err := call.Do()
+		if err != nil {
+			log.Printf("Error making API call: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 			return
 		}
 
-		data := processItemsConcurrently(jsonResponse, service, true)
+		if getVideoItemObject == "true" {
+			jsonResponse, err := json.Marshal(response)
+			if err != nil {
+				log.Printf("Error marshaling response: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+				return
+			}
 
-		// Marshal the modified data back into JSON
-		modifiedResponse, err := json.Marshal(data)
-		if err != nil {
-			log.Printf("Error marshaling modified data: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-			return
+			data := processItemsConcurrently(jsonResponse, service, true)
+
+			// Marshal the modified data back into JSON
+			modifiedResponse, err := json.Marshal(data)
+			if err != nil {
+				log.Printf("Error marshaling modified data: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+				return
+			}
+
+			c.Data(http.StatusOK, "application/json; charset=utf-8", modifiedResponse)
+
+		} else {
+			c.IndentedJSON(http.StatusOK, response)
 		}
-
-		c.Data(http.StatusOK, "application/json; charset=utf-8", modifiedResponse)
 	} else {
-		c.IndentedJSON(http.StatusOK, response)
+		data, err := os.ReadFile("json/videos-by-channel-id.json")
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to read data from the JSON file"})
+			return
+		}
+
+		var items map[string]interface{}
+		if err := json.Unmarshal(data, &items); err != nil {
+			c.JSON(500, gin.H{"error": "Failed to unmarshal JSON"})
+			return
+		}
+
+		time.Sleep(1 * time.Second)
+
+		c.JSON(200, items)
 	}
 }
