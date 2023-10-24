@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	docs "github.com/youtube-clone-api/docs"
+	"github.com/swaggo/swag/example/basic/docs"
 )
 
 func main() {
@@ -21,35 +21,52 @@ func main() {
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	v1 := r.Group("/api/v1")
 	{
-		eg := v1.Group("/")
+		// Base
+		base := v1.Group("/")
 		{
-			eg.GET("/", getApiBaseEndpoint)
+			base.GET("/", getApiBaseEndpoint)
+		}
+
+		// Videos
+		videos := v1.Group("videos")
+		{
+			videos.GET("mostPopular", getPopularYoutubeVideos)
+			videos.GET(":id", getVideoById)
+			videos.GET("channel/:id", getVideosByChannelId)
+		}
+
+		// Playlists
+		playlists := v1.Group("playlists")
+		{
+			playlists.GET(":id", getPlaylistById)
+		}
+
+		// Playlist Items
+		playlistsItems := v1.Group("playlistItems")
+		{
+			playlistsItems.GET("playlist/:playlist_id", getPlaylistItemsByPlaylistId)
+		}
+
+		// Video Categories
+		videoCategories := v1.Group("videosCategories")
+		{
+			videoCategories.GET("/", getVideoCategoriesByRegionCode)
+		}
+
+		// Channels
+		channels := v1.Group("channels")
+		{
+			channels.GET("/", getChannel)
+		}
+
+		// Channel Sections
+		channelSections := v1.Group("channelSections")
+		{
+			channelSections.GET("channel/:id", getChannelSectionsByChannelId)
+			channelSections.GET(":id", getChannelSectionsById)
 		}
 	}
 
-	// // Base
-	// router.GET("/api/v1", getApiBaseEndpoint)
-
-	// // Videos
-	// router.GET("/api/v1/videos/mostPopular", getPopularYoutubeVideos)
-	// router.GET("/api/v1/videos/:id", getVideoById)
-	// router.GET("/api/v1/videos/channel/:id", getVideosByChannelId)
-
-	// // Playlists
-	// router.GET("/api/v1/playlists/:id", getPlaylistById)
-
-	// // Playlist Items
-	// router.GET("/api/v1/playlistItems/playlist/:playlist_id", getPlaylistItemsByPlaylistId)
-
-	// // Video Categories
-	// router.GET("/api/v1/videosCategories", getVideoCategoriesByRegionCode)
-
-	// // Channels
-	// router.GET("/api/v1/channels", getChannel)
-
-	// // Channel Sections
-	// router.GET("/api/v1/channelSections/channel/:id", getChannelSectionsByChannelId)
-	// router.GET("/api/v1/channelSections/:id", getChannelSectionsById)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	r.Run()
 }
@@ -63,8 +80,8 @@ func main() {
 // @Tags example
 // @Accept json
 // @Produce json
-// @Success 200 {string} Helloworld
-// @Router /example/helloworld [get]
+// @Success 200 {string} YouTube Clone API
+// @Router /api/v1 [get]
 func getApiBaseEndpoint(c *gin.Context) {
 	type apiBase struct {
 		Info string `json:"info"`
