@@ -9,7 +9,7 @@ import (
 )
 
 func getPlaylistItemsByPlaylistId(c *gin.Context) {
-	playlistParts := strings.Split("contentDetails,localizations,snippet,status", ",")
+	playlistParts := strings.Split("contentDetails,snippet,status", ",")
 	playlistId := c.Param("playlist_id")
 
 	service, err := getGoogleApiService()

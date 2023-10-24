@@ -46,7 +46,7 @@ func getPopularYoutubeVideos(c *gin.Context) {
 			return
 		}
 
-		data := processItemsConcurrently(jsonResponse, service, false)
+		data := processItemsConcurrently(jsonResponse, service, false, "")
 
 		// Marshal the modified data back into JSON
 		modifiedResponse, err := json.Marshal(data)
@@ -89,6 +89,7 @@ func getVideosByChannelId(c *gin.Context) {
 	order := c.DefaultQuery("order", "date")
 	getVideoItemObject := c.DefaultQuery("gvio", "true")
 	getFakeData := c.DefaultQuery("gfd", "false")
+	nextPageToken := c.DefaultQuery("npt", "")
 
 	if getFakeData == "false" {
 		service, err := getGoogleApiService()
@@ -113,7 +114,7 @@ func getVideosByChannelId(c *gin.Context) {
 				return
 			}
 
-			data := processItemsConcurrently(jsonResponse, service, true)
+			data := processItemsConcurrently(jsonResponse, service, true, nextPageToken)
 
 			// Marshal the modified data back into JSON
 			modifiedResponse, err := json.Marshal(data)

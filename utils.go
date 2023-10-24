@@ -24,11 +24,11 @@ func getChannelThumbnails(service *youtube.Service, channelId string) *youtube.T
 	return channelResponse.Items[0].Snippet.Thumbnails
 }
 
-func getVideo(service *youtube.Service, videoId string) *youtube.VideoListResponse {
+func getVideo(service *youtube.Service, videoId string, nextPageToken string) *youtube.VideoListResponse {
 	videoParts := strings.Split("id,snippet,statistics,contentDetails", ",")
 
 	call := service.Videos.List(videoParts)
-	call = call.Id(videoId)
+	call = call.Id(videoId).PageToken(nextPageToken)
 	response, err := call.Do()
 
 	if err != nil {
@@ -39,7 +39,7 @@ func getVideo(service *youtube.Service, videoId string) *youtube.VideoListRespon
 	return response
 }
 
-func processItemsConcurrently(jsonResponse []byte, service *youtube.Service, replaceItemObj bool) map[string]interface{} {
+func processItemsConcurrently(jsonResponse []byte, service *youtube.Service, replaceItemObj bool, nextPageToken string) map[string]interface{} {
 	var data map[string]interface{}
 	if err := json.Unmarshal(jsonResponse, &data); err != nil {
 		log.Printf("Error unmarshaling JSON: %v", err)
@@ -59,7 +59,7 @@ func processItemsConcurrently(jsonResponse []byte, service *youtube.Service, rep
 					defer wg.Done()
 					var processedItem map[string]interface{}
 					if replaceItemObj {
-						processedItem = replaceItem(itemMap, service)
+						processedItem = replaceItem(itemMap, service, nextPageToken)
 					} else {
 						processedItem = processItemSnippet(itemMap, service)
 					}
@@ -101,7 +101,7 @@ func processItemSnippet(itemMap map[string]interface{}, service *youtube.Service
 	return itemMap
 }
 
-func replaceItem(itemMap map[string]interface{}, service *youtube.Service) map[string]interface{} {
+func replaceItem(itemMap map[string]interface{}, service *youtube.Service, nextPageToken string) map[string]interface{} {
 	videoIdObj, videoIdExists := itemMap["id"].(map[string]interface{})
 	if !videoIdExists {
 		videoIdObj = make(map[string]interface{})
@@ -111,7 +111,7 @@ func replaceItem(itemMap map[string]interface{}, service *youtube.Service) map[s
 	videoId := videoIdObj["videoId"]
 
 	if videoIdStr, ok := videoId.(string); ok {
-		videoResponse := getVideo(service, videoIdStr)
+		videoResponse := getVideo(service, videoIdStr, nextPageToken)
 
 		video := videoResponse.Items[0]
 
