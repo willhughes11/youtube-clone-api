@@ -18,57 +18,74 @@ func getChannelThumbnails(service *youtube.Service, channelId string) *youtube.T
 
 	if err != nil {
 		log.Printf("Error making API call: %v", err)
-		return nil // Handle error appropriately in your code
+		return nil
 	}
 
 	return channelResponse.Items[0].Snippet.Thumbnails
 }
 
-func processItemsConcurrently(jsonResponse []byte, service *youtube.Service) map[string]interface{} {
-	// Unmarshal the JSON into a Go data structure (e.g., a map)
+func getVideo(service *youtube.Service, videoId string, nextPageToken string) *youtube.VideoListResponse {
+	videoParts := strings.Split("id,snippet,statistics,contentDetails", ",")
+
+	call := service.Videos.List(videoParts)
+	call = call.Id(videoId).PageToken(nextPageToken)
+	response, err := call.Do()
+
+	if err != nil {
+		log.Printf("Error making API call: %v", err)
+		return nil
+	}
+
+	return response
+}
+
+func processItemsConcurrently(jsonResponse []byte, service *youtube.Service, replaceItemObj bool, nextPageToken string) map[string]interface{} {
 	var data map[string]interface{}
 	if err := json.Unmarshal(jsonResponse, &data); err != nil {
 		log.Printf("Error unmarshaling JSON: %v", err)
 		return nil
 	}
 
-	// Create a channel to collect results from goroutines
 	resultChannel := make(chan map[string]interface{})
 
-	// Slice to store processed items
 	processedItems := []map[string]interface{}{}
 
-	// Loop through the data and launch a goroutine for each item
 	if items, ok := data["items"].([]interface{}); ok {
 		var wg sync.WaitGroup
-		for _, item := range items {
+		for i, item := range items {
 			if itemMap, itemIsMap := item.(map[string]interface{}); itemIsMap {
 				wg.Add(1)
-				go func(itemMap map[string]interface{}) {
+				go func(i int, itemMap map[string]interface{}) {
 					defer wg.Done()
-					processedItem := processItem(itemMap, service)
-					resultChannel <- processedItem // Send the processed item to the channel
-				}(itemMap)
+					var processedItem map[string]interface{}
+					if replaceItemObj {
+						processedItem = replaceItem(itemMap, service, nextPageToken)
+					} else {
+						processedItem = processItemSnippet(itemMap, service)
+					}
+
+					data["items"].([]interface{})[i] = processedItem
+
+					resultChannel <- processedItem
+				}(i, itemMap)
 			}
 		}
 
-		// Close the result channel when all goroutines are done
 		go func() {
 			wg.Wait()
 			close(resultChannel)
 		}()
 	}
 
-	// Collect results from goroutines
+	// Collect processed items if needed, but they are already updated in the data map
 	for processedItem := range resultChannel {
-		// Append processed items to the slice
 		_ = append(processedItems, processedItem)
 	}
 
 	return data
 }
 
-func processItem(itemMap map[string]interface{}, service *youtube.Service) map[string]interface{} {
+func processItemSnippet(itemMap map[string]interface{}, service *youtube.Service) map[string]interface{} {
 	snippet, snippetExists := itemMap["snippet"].(map[string]interface{})
 	if !snippetExists {
 		snippet = make(map[string]interface{})
@@ -79,9 +96,34 @@ func processItem(itemMap map[string]interface{}, service *youtube.Service) map[s
 
 	if channelIdStr, ok := channelId.(string); ok {
 		channelThumbnails := getChannelThumbnails(service, channelIdStr)
-
-		// Modify or add a new key-value pair to "snippet"
 		snippet["channelThumbnails"] = channelThumbnails
+	}
+	return itemMap
+}
+
+func replaceItem(itemMap map[string]interface{}, service *youtube.Service, nextPageToken string) map[string]interface{} {
+	videoIdObj, videoIdExists := itemMap["id"].(map[string]interface{})
+	if !videoIdExists {
+		videoIdObj = make(map[string]interface{})
+		itemMap["id"] = videoIdObj
+	}
+
+	videoId := videoIdObj["videoId"]
+
+	if videoIdStr, ok := videoId.(string); ok {
+		videoResponse := getVideo(service, videoIdStr, nextPageToken)
+
+		video := videoResponse.Items[0]
+
+		item := make(map[string]interface{})
+		item["kind"] = video.Kind
+		item["etag"] = video.Etag
+		item["id"] = video.Id
+		item["snippet"] = video.Snippet
+		item["statistics"] = video.Statistics
+		item["contentDetails"] = video.ContentDetails
+
+		itemMap = item
 	}
 	return itemMap
 }

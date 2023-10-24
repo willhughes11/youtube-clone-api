@@ -8,16 +8,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getChannelProfileThumbnails(c *gin.Context) {
-	channelProfilePictureParts := strings.Split("snippet", ",")
-	channelId := c.Param("id")
+func getChannel(c *gin.Context) {
+	channelParts := strings.Split("id,contentDetails,id,snippet,statistics,topicDetails,status,brandingSettings,localizations", ",")
+	channelId := c.Query("id")
+	username := c.Query("uname")
+
+	if len(channelId) > 0 && len(username) > 0 || len(channelId) == 0 && len(username) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
 
 	service, err := getGoogleApiService()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 	}
 
-	call := service.Channels.List(channelProfilePictureParts)
+	call := service.Channels.List(channelParts)
 	call = call.Id(channelId)
 	response, err := call.Do()
 	if err != nil {
@@ -26,12 +32,5 @@ func getChannelProfileThumbnails(c *gin.Context) {
 		return
 	}
 
-	channelThumbnails := map[string]interface{}{
-		"etag":       response.Etag,
-		"kind":       response.Kind,
-		"id":         response.Items[0].Id,
-		"thumbnails": response.Items[0].Snippet.Thumbnails,
-	}
-
-	c.IndentedJSON(http.StatusOK, channelThumbnails)
+	c.IndentedJSON(http.StatusOK, response)
 }
