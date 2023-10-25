@@ -1,4 +1,35 @@
+basePath: /
 info:
   contact: {}
-paths: {}
+paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      description: Base Endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Base Endpoint
+      tags:
+      - example
+  /channels:
+    get:
+      consumes:
+      - application/json
+      description: Base Endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Get Channels
+      tags:
+      - example
 swagger: "2.0"

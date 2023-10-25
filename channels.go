@@ -8,6 +8,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @BasePath /channels
+
+// PingExample godoc
+// @Summary Get Channels
+// @Schemes
+// @Description Base Endpoint
+// @Tags example
+// @Accept json
+// @Produce json
+// @Success 200 {string} YouTube Clone API
+// @Router /channels [get]
 func getChannel(c *gin.Context) {
 	channelParts := strings.Split("id,contentDetails,id,snippet,statistics,topicDetails,status,brandingSettings,localizations", ",")
 	channelId := c.Query("id")

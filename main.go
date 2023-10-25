@@ -3,11 +3,13 @@ package main
 import (
 	"net/http"
 
+	docs "youtubeclone/ginapi/docs"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/swag/example/basic/docs"
+	// "github.com/swaggo/swag/example/basic/docs"
 )
 
 func main() {
@@ -71,17 +73,17 @@ func main() {
 	r.Run()
 }
 
-// @BasePath /api/v1
+// @BasePath /
 
 // PingExample godoc
-// @Summary ping example
+// @Summary Base Endpoint
 // @Schemes
-// @Description do ping
+// @Description Base Endpoint
 // @Tags example
 // @Accept json
 // @Produce json
 // @Success 200 {string} YouTube Clone API
-// @Router /api/v1 [get]
+// @Router / [get]
 func getApiBaseEndpoint(c *gin.Context) {
 	type apiBase struct {
 		Info string `json:"info"`
