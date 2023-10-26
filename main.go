@@ -64,8 +64,9 @@ func main() {
 		// Channel Sections
 		channelSections := v1.Group("channelSections")
 		{
-			channelSections.GET("channel/:id", getChannelSectionsByChannelId)
 			channelSections.GET(":id", getChannelSectionsById)
+			channelSections.GET("channel/:id", getChannelSectionsByChannelId)
+			channelSections.GET("content/channel/:id", getChannelSectionsContentByChannelId)
 		}
 	}
 
